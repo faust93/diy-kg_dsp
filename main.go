@@ -32,7 +32,6 @@ const (
     // AMP mute
     MUTE_PIN_CH = "gpiochip0"
     MUTE_PIN = 15
-    MUTE_TH = 60 // AMP mute threshold sec
 
     DAC_STATE_F = "/proc/asound/cirruscs42448/pcm0p/sub0/status"
     DAC_P_PARAMS_F = "/proc/asound/cirruscs42448/pcm0p/sub0/hw_params"
@@ -146,15 +145,16 @@ func ampControl() {
         astate1 := strings.Contains(string(buf), "SETUP")
         astate2 := strings.Contains(string(buf), "closed")
 
-        if astate && AMP_Mute == 0 {
-            log.Println("unmute AMP")
-            muteAMP(1)  //unmute
+        if astate {
+            if AMP_Mute == 0 {
+                log.Println("unmute AMP")
+                muteAMP(1)  //unmute
+                ctl_ch <- DISP_UPDATE
+            }
             unmuteTime = time.Now()
-            ctl_ch <- DISP_UPDATE
         } else if (astate1 || astate2) && AMP_Mute == 1 {
-
             diff := time.Now().Sub(unmuteTime)
-            if diff.Seconds() > float64(MUTE_TH) {
+            if diff.Seconds() > float64(conf.AMP_Mute_Timeout) {
                 log.Println("mute AMP")
                 muteAMP(0) //mute
                 ctl_ch <- DISP_UPDATE

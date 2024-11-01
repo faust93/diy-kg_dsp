@@ -20,5 +20,6 @@
 	"OLED_Timeout": 30,
 	"CDSP_Config": "Music3.yml",
 	"CDSP_Save": false,
+	"AMP_Mute_Timeout": 300,
 	"WIFI_AP_Mode": false
 }

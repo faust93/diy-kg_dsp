@@ -45,6 +45,8 @@ const (
 
     I_WIFI_AP = 50
     I_USB_ETH = 51
+    // amp idle timeout
+    I_AMP_MUTE = 52
 
     I_REBOOT  = 80
     I_HALT    = 81
@@ -66,6 +68,13 @@ const (
     ADC3_VOL_CTL = 11
 
     )
+
+// amp mute timeouts (seconds)
+const (
+    AMP_MUTE_T1 = 60
+    AMP_MUTE_T2 = 300
+    AMP_MUTE_T3 = 600
+)
 
 var evtTime time.Time
 
@@ -148,7 +157,7 @@ func MenuInit() {
                           iarg1: 7,
                         },
                         { name: "< Back",
-                          x: 11, y: 21,
+                          x: 1, y: 21,
                           itype: I_BACK,
                           iarg1: MAIN_MODE,
                         },
@@ -178,7 +187,7 @@ func MenuInit() {
                           itype: I_DAC4VOL,
                         },
                         { name: "< Back",
-                          x: 11, y: 51,
+                          x: 1, y: 51,
                           itype: I_BACK,
                         },
                     },
@@ -199,12 +208,12 @@ func MenuInit() {
                           itype: I_ADC_SPDIFVOL,
                         },
                         { name: "< Back",
-                          x: 11, y: 31,
+                          x: 1, y: 31,
                           itype: I_BACK,
                         },
 
                     },
-                },
+               },
                 {
                     id: 3, //INPUTS
                     items: []menuItem{
@@ -229,7 +238,7 @@ func MenuInit() {
                           itype: I_STREAM_IN,
                         },
                         { name: "< Back",
-                          x: 11, y: 51,
+                          x: 1, y: 51,
                           itype: I_BACK,
                         },
 
@@ -259,7 +268,7 @@ func MenuInit() {
                           itype: I_LDSP41_OUT,
                         },
                         { name: "< Back",
-                          x: 11, y: 51,
+                          x: 1, y: 51,
                           itype: I_BACK,
                         },
 
@@ -289,7 +298,7 @@ func MenuInit() {
                           itype: I_CDSP_SIGHUP,
                         },
                         { name: "< Back",
-                          x: 11, y: 51,
+                          x: 1, y: 51,
                           itype: I_BACK,
                         },
 
@@ -298,19 +307,49 @@ func MenuInit() {
                 {
                     id: 6, //Opts
                     items: []menuItem{
-                        { name: "WIFI AP Mode",
+                        { name: "AMP Mute Timeout",
                           x: 11, y: 1,
+                          itype: I_SCREEN,
+                          iarg1: 7,
+                        },
+                        { name: "WIFI AP Mode",
+                          x: 11, y: 11,
                           itype: I_WIFI_AP,
                         },
                         { name: "USB ETH Mode",
-                          x: 11, y: 11,
+                          x: 11, y: 21,
                           itype: I_USB_ETH,
                         },
                         { name: "< Back",
-                          x: 11, y: 21,
+                          x: 1, y: 31,
                           itype: I_BACK,
+                          iarg1: MAIN_MODE,
                         },
 
+                    },
+                },
+                {
+                    id: 7, //Amp timeout
+                    items: []menuItem{
+                        { name: "1 min",
+                          x: 11, y: 1,
+                          itype: I_AMP_MUTE,
+                          iarg1: AMP_MUTE_T1,
+                        },
+                        { name: "5 min",
+                          x: 11, y: 11,
+                          itype: I_AMP_MUTE,
+                          iarg1: AMP_MUTE_T2,
+                        },
+                        { name: "10 min",
+                          x: 11, y: 21,
+                          itype: I_AMP_MUTE,
+                          iarg1: AMP_MUTE_T3,
+                        },
+                        { name: "< Back",
+                          x: 1, y: 31,
+                          itype: I_BACK,
+                        },
                     },
                 },
 
@@ -471,6 +510,11 @@ func MenuDisplay() {
 
                         case I_LINE_OUT, I_CDSP_OUT, I_LDSP21_OUT, I_LDSP31_OUT, I_LDSP41_OUT:
                             if menu.screens[menu.active_screen].items[i].itype == conf.OUT_active {
+                                disp.oledDraw_bitmap(100, menu.screens[menu.active_screen].items[i].y, 8, 8, &left_arrow, WHITE)
+                            }
+
+                        case I_AMP_MUTE:
+                            if conf.AMP_Mute_Timeout == menu.screens[menu.active_screen].items[i].iarg1 {
                                 disp.oledDraw_bitmap(100, menu.screens[menu.active_screen].items[i].y, 8, 8, &left_arrow, WHITE)
                             }
 
@@ -759,6 +803,9 @@ func MenuClick() {
                     conf.OUT_active = I_LDSP41_OUT
                     saveConfig("config.json")
                     runCmd("./sysconfig.sh alsa_update_cfg");
+
+                case I_AMP_MUTE:
+                    conf.AMP_Mute_Timeout = menu.screens[menu.active_screen].items[menu.cursor_pos].iarg1
 
                 case I_WIFI_AP:
                     if conf.WIFI_AP_Mode {

@@ -36,6 +36,9 @@ type Config struct {
     // OLED timeout in sec
     OLED_Timeout  int
 
+    // Put amp to idle mode after n-sec of inactivity
+    AMP_Mute_Timeout int
+
     CDSP_Config string
     CDSP_Save bool
 
