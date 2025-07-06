@@ -11,6 +11,53 @@ import (
 const CDSP_ADDR = "ws://127.0.0.1:5050"
 const CDSP_CFG_DIR = "/opt/dsp/configs"
 
+func GetFloatArray(data []byte, keys ...string) ([]float64, error) {
+    var floats []float64
+    _, err := jsonparser.ArrayEach(data, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+        if err != nil {
+            return
+        }
+        num, err := jsonparser.ParseFloat(value)
+        if err != nil {
+            return
+        }
+        floats = append(floats, num)
+    }, keys...)
+    if err != nil {
+        return nil, err
+    }
+    return floats, nil
+}
+
+func cdspGetPlaybackSignalRms() (reason []float64, error bool) {
+    ws, _, err := websocket.DefaultDialer.Dial(CDSP_ADDR, nil)
+    if err != nil {
+        return nil, true
+    }
+    defer ws.Close()
+
+    msgs := "\"GetPlaybackSignalRms\""
+    if err := ws.WriteMessage(websocket.TextMessage, []byte(msgs)); err != nil {
+        return nil, true
+    }
+    _, msg, err := ws.ReadMessage()
+    if err != nil {
+         return nil, true
+    }
+
+    res, _ := jsonparser.GetString(msg, "GetPlaybackSignalRms", "result")
+    if res != "Ok" {
+        return nil, true
+    }
+
+    resn, err := GetFloatArray(msg, "GetPlaybackSignalRms", "value")
+    if err != nil {
+         return nil, true
+    }
+
+    return resn, false
+}
+
 func cdspGetVolume() (volume float64, error bool) {
     ws, _, err := websocket.DefaultDialer.Dial(CDSP_ADDR, nil)
     if err != nil {

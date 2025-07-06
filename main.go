@@ -12,6 +12,7 @@ import (
     "sync"
     "strings"
     "strconv"
+    "math"
     "github.com/warthog618/go-gpiocdev"
     )
 
@@ -27,7 +28,7 @@ const (
     RSW_PIN_DT_CH = "gpiochip2"
     RSW_PIN_DT  = 1
     RSW_PIN_SW_CH = "gpiochip1"
-    RSW_PIN_SW  = 22
+    RSW_PIN_SW  = 23
 
     // AMP mute
     MUTE_PIN_CH = "gpiochip0"
@@ -60,6 +61,9 @@ var DacPRate, DacPCh, DacPFmt string
 
 // USB Ethernet gadget (for debug/config purposes)
 var USB_ETH_Mode bool = false
+
+// Signal Meter acvite flag
+var sMeter bool = false
 
 // control channel
 var ctl_ch = make(chan int, 16)
@@ -191,6 +195,11 @@ func wifiControl() {
             log.Println("WIFI connected")
             WifiState = true
             ctl_ch <- DISP_UPDATE
+
+            log.Println("Restarting services")
+            if err := runCmd("./sysconfig.sh restart"); err != 0 {
+                log.Println("Some services failed to start")
+            }
         } else if !arpRec && WifiState {
             log.Println("WIFI disconnected")
             WifiState = false
@@ -202,26 +211,62 @@ func wifiControl() {
 
 func oledControl() {
     for {
-        if OLED_off && OLED_time > 0 {
+
+        if conf.Signal_Meter && conf.OUT_active == I_CDSP_OUT && !sMeter {
+            sMeter = true
+        } else if conf.OUT_active != I_CDSP_OUT && sMeter {
+            sMeter = false
+        }
+
+        if (OLED_off && OLED_time > 0) || (OLED_off && OLED_time <= 0 && AMP_Mute == 1 && sMeter) {
             disp.oledSet_power(true)
             disp.oledSet_contrast(conf.OLED_Contrast)
             OLED_off = false
             OLED_LowContrast = false
         } else if !OLED_off && OLED_time <= 0 {
-            disp.oledSet_power(false)
-            OLED_off = true
+                if !sMeter {
+                    disp.oledSet_power(false)
+                    OLED_off = true
+                } else if AMP_Mute == 0 {
+                    disp.oledSet_power(false)
+                    OLED_off = true
+                }
         }
+
         if OLED_time > 0 {
             mutex.Lock()
             OLED_time--
             mutex.Unlock()
-            if OLED_time < (conf.OLED_Timeout / 2) && !OLED_LowContrast {
+            if OLED_time < (conf.OLED_Timeout / 2) && !OLED_LowContrast && !sMeter {
                 OLED_LowContrast = true
                 disp.oledSet_contrast(conf.OLED_Contrast / 3)
             }
         }
-        time.Sleep(1 * time.Second)
+
+        if sMeter && !OLED_off && OLED_time <= 0 {
+            signalBars()
+            time.Sleep(50 * time.Millisecond)
+        } else {
+            time.Sleep(1 * time.Second)
+        }
     }
+}
+
+func signalBars() {
+    var sbWidth int16 = 10
+    var x int16 = 0
+
+    chRMS, err := cdspGetPlaybackSignalRms()
+    if err { return }
+    if len(chRMS) == 0 || len(chRMS) > 8 { return }
+
+    disp.oledClear(BLACK)
+    for _, v := range chRMS {
+        x = x + sbWidth + 3
+        vol := int16(math.Round(v + 100 * 64.0 / 100.0))
+        disp.oledDraw_smBar(x, vol, sbWidth)
+    }
+    disp.oledDisplay()
 }
 
 func dacParamsFetch() {
@@ -405,7 +450,7 @@ func main() {
             case ctl := <-ctl_ch:
                 switch ctl {
                     case DISP_UPDATE:
-                        if StopReason == STERM {
+                        if StopReason == STERM && OLED_time > 0 {
                             MenuDisplay()
                         }
                     case REBOOT:

@@ -1,6 +1,6 @@
 {
 	"Sw_volume": 255,
-	"Center_volume": 254,
+	"Center_volume": 255,
 	"FR_volume": 255,
 	"FL_volume": 255,
 	"SR_volume": 255,
@@ -18,8 +18,9 @@
 	"Vol_step": 1,
 	"OLED_Contrast": 100,
 	"OLED_Timeout": 30,
-	"CDSP_Config": "Music3.yml",
-	"CDSP_Save": false,
 	"AMP_Mute_Timeout": 300,
-	"WIFI_AP_Mode": false
+	"CDSP_Config": "Music4.yml",
+	"CDSP_Save": false,
+	"WIFI_AP_Mode": false,
+	"Signal_Meter": true
 }

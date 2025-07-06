@@ -592,10 +592,19 @@ func (o *OLED) oledDraw_rectangle(x0 int16, y0 int16, x1 int16, y1 int16, fillMo
     }
 }
 
-func (o *OLED) oledDraw_vbar(x0 int16, y0 int16, height int16, width int16) {
+func (o *OLED) oledDraw_hbar(x0 int16, y0 int16, height int16, width int16) {
     var i int16
     for i = 0; i < width; i+=2 {
         o.oledDraw_line(x0 + i, y0, x0 + i, y0 + height, WHITE)
+    }
+}
+
+func (o *OLED) oledDraw_smBar(x0 int16, height int16, width int16) {
+    var h int16
+
+    h = o.height - height
+    for  y := o.height; y >= h; y-=2 {
+        o.oledDraw_line(x0, y, x0 + width, y, WHITE)
     }
 }
 

@@ -43,6 +43,8 @@ type Config struct {
     CDSP_Save bool
 
     WIFI_AP_Mode bool
+
+    Signal_Meter bool
 }
 
 var conf Config

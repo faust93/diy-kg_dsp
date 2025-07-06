@@ -47,6 +47,8 @@ const (
     I_USB_ETH = 51
     // amp idle timeout
     I_AMP_MUTE = 52
+    // OLED Signal Meter
+    I_SIGNAL_METR = 53
 
     I_REBOOT  = 80
     I_HALT    = 81
@@ -312,16 +314,20 @@ func MenuInit() {
                           itype: I_SCREEN,
                           iarg1: 7,
                         },
-                        { name: "WIFI AP Mode",
+                        { name: "Signal Meter",
                           x: 11, y: 11,
+                          itype: I_SIGNAL_METR,
+                        },
+                        { name: "WIFI AP Mode",
+                          x: 11, y: 21,
                           itype: I_WIFI_AP,
                         },
                         { name: "USB ETH Mode",
-                          x: 11, y: 21,
+                          x: 11, y: 31,
                           itype: I_USB_ETH,
                         },
                         { name: "< Back",
-                          x: 1, y: 31,
+                          x: 1, y: 41,
                           itype: I_BACK,
                           iarg1: MAIN_MODE,
                         },
@@ -425,7 +431,7 @@ func MainScreen() {
         if err {
             msgDisplay(27, 52, "CDSP error", 0)
         } else {
-            disp.oledDraw_vbar(23, 52, 6, int16(50 - math.Abs(vol)))
+            disp.oledDraw_hbar(23, 52, 6, int16(50 - math.Abs(vol)))
             dbvol := fmt.Sprintf("%.1fdB", vol)
             disp.oledDraw_string(76, 52, dbvol, NORMAL_SIZE, WHITE)
         }
@@ -520,6 +526,11 @@ func MenuDisplay() {
 
                         case I_WIFI_AP:
                             if conf.WIFI_AP_Mode {
+                                disp.oledDraw_bitmap(100, menu.screens[menu.active_screen].items[i].y, 8, 8, &left_arrow, WHITE)
+                            }
+
+                        case I_SIGNAL_METR:
+                            if conf.Signal_Meter {
                                 disp.oledDraw_bitmap(100, menu.screens[menu.active_screen].items[i].y, 8, 8, &left_arrow, WHITE)
                             }
 
@@ -658,6 +669,7 @@ func MenuClick() {
                     if menu.screens[menu.active_screen].items[menu.cursor_pos].iarg1 == MAIN_MODE {
                         menu.mode = MAIN_MODE
                         menu.cursor_pos = 0
+                        menu.active_screen = 0
                     } else {
                         menu.active_screen = menu.prev_screen
                         menu.cursor_pos = 0
@@ -815,6 +827,14 @@ func MenuClick() {
                         conf.WIFI_AP_Mode = true
                         runCmd("./sysconfig.sh wifiap_start");
                     }
+                case I_SIGNAL_METR:
+                    if conf.Signal_Meter {
+                        conf.Signal_Meter = false
+                        sMeter = false
+                    } else {
+                        conf.Signal_Meter = true
+                    }
+                    saveConfig("config.json")
                 case I_USB_ETH:
                     if USB_ETH_Mode {
                         USB_ETH_Mode = false
