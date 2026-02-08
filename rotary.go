@@ -31,13 +31,14 @@ type RotarySwitch struct {
 func (sw *RotarySwitch) RotarySwitchInit() {
     var err error
 
-    sw.outA, err = gpiocdev.RequestLine(sw.gpio_clk_chip, sw.gpio_clk, gpiocdev.WithEventHandler(sw.rotaryHandler), gpiocdev.WithBothEdges, gpiocdev.WithDebounce(500))
+    period := 10 * time.Millisecond
+    sw.outA, err = gpiocdev.RequestLine(sw.gpio_clk_chip, sw.gpio_clk, gpiocdev.WithEventHandler(sw.rotaryHandler), gpiocdev.WithBothEdges, gpiocdev.WithDebounce(period))
     if err != nil {
             log.Fatal("RequestLine returned error: %w", err)
     }
     sw.outA.Reconfigure(gpiocdev.WithPullUp)
 
-    sw.outB, err = gpiocdev.RequestLine(sw.gpio_dt_chip, sw.gpio_dt, gpiocdev.WithEventHandler(sw.rotaryHandler), gpiocdev.WithBothEdges, gpiocdev.WithDebounce(500))
+    sw.outB, err = gpiocdev.RequestLine(sw.gpio_dt_chip, sw.gpio_dt, gpiocdev.WithEventHandler(sw.rotaryHandler), gpiocdev.WithBothEdges, gpiocdev.WithDebounce(period))
     if err != nil {
             log.Fatal("RequestLine returned error: %w", err)
     }
